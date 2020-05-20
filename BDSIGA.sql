@@ -54,8 +54,111 @@ CREATE TABLE notas
 go
 
 /* a) Fazer o sistema, com Stored Procedure para inserção de notas e pesos;  */
-	
-/* b) Fazer o sistema com Stored Procedure para inserção de faltas; */
+create  procedure sp_Pesos
+@disci_codigo        int,
+@aval_codigo         int,
+@aval_tipo            char(2),
+@aval_peso            decimal(3,2),
+@op                    CHAR(1)
+as
+begin
+    if(UPPER(@op)='I')
+    begin
+        if(@aval_tipo is null OR @aval_peso is null OR @op is null or not exists(select disci_codigo from disciplina where disci_codigo = @disci_codigo))
+            begin
+            RAISERROR('Valores Inválidos ou Já Existentes', 16, 1)
+            end
+        else
+        begin
+            insert into avaliacao(aval_codigo,aval_tipo, aval_peso) values (@aval_codigo,@aval_tipo, @aval_peso)
+        end
+    end
+    else
+    begin
+        if(UPPER(@op)='U')
+        begin
+        update avaliacao set aval_tipo  = @aval_tipo, aval_peso = @aval_peso where aval_tipo = @aval_tipo
+        end
+    end
+end
+--INSERE OS PESOS PARA CADA AVALIAÇÃO PARA CADA DISCIPLINA
+--DISICPLINA, TIPO DE AV, PESO, OPÇÃO I = INSERE OU U = ATUALIZA
+
+exec sp_Pesos 2,2,'P3', 0.2, 'i'
+exec sp_Pesos 1,1,'P1', 0.22, 'i'
+exec sp_Pesos 4,3,'P2', 0.35, 'i'
+exec sp_Pesos 5,4,'MO', 0.85, 'i'
+exec sp_Pesos 3,2,'MG', 0.8, 'i'
+/*
+select  av.aval_peso, av.aval_tipo, dc.disci_nome from avaliacao av inner join notas nt
+on av.aval_codigo = nt.aval_codigo
+inner join disciplina dc
+on dc.disci_codigo = nt.disci_codigo
+*/
+
+--SELECT FEITO COM A CREATE VIEW CRIADA ABAIXO
+SELECT * FROM avaliacao
+
+
+--PROCEDURE CRIADA PARA INSERÇÃO DE NOTAS PARA CADA ALUNO DE CADA DISCIPLINA
+create  procedure sp_Notas
+@aluno_ra		 int,
+@disci_codigo	 int,
+@aval_codigo	 int,
+@nota			 int
+as
+begin
+		insert into notas values (@aluno_ra, @disci_codigo, @aval_codigo, @nota)
+		declare @peso decimal(2,2), @media decimal(3,2)
+end
+--INSERE NOTAS SENDO RA, DISCIPLINA, TIPO DE AV, NOTA
+exec sp_Notas 1458831, 0, 1, 9
+exec sp_Notas 1459890, 1, 2, 8
+exec sp_Notas 1450091, 2, 3, 7
+exec sp_Notas 1456089, 1, 4, 2
+
+--SELECT FEITO A PARTIR DE UMA CREATE VIEW MAIS ABAIXO
+select * from notas
+select * from NOTA_aluno where DISCIPLINA = 'COMERCIO EXTERIOR'
+SELECT * FROM NOTA_aluno where DISCIPLINA = 'ANALISE E DESENVOLVIMENTO DE SOFTWARE'
+
+
+--VISUALIZAÇÃO PREDEFINIDA COM VIEWS
+create view Avaliacoes
+as
+select aval_tipo as 'Tipo', aval_peso as 'Peso' from avaliacao
+
+create view NOTA_aluno
+AS
+select al.aluno_ra as 'RA', al.aluno_nome as 'NOME', dc.disci_nome as 'DISCIPLINA', aval_tipo as 'AVALIAÇÃO', nt.nota as 'NOTA' from aluno al inner join notas nt
+on al.aluno_ra = nt.aluno_ra
+inner join disciplina dc
+on nt.disci_codigo = dc.disci_codigo
+inner join avaliacao av
+on nt.aval_codigo = av.aval_codigo
+
+
+
+-- QUESTÃO B
+create  procedure sp_faltas
+@aluno_ra int, 
+@disci_cod int,
+@disci_numaulas int,
+@faltas smallint
+as
+	begin
+	declare @falta_dia	datetime 
+	 set @falta_dia = getdate()
+		if(@disci_numaulas = 80 and @faltas <= 4)
+			begin 
+				insert into faltas(aluno_ra,disci_codigo,falta_dia,faltas_presencas) VAlues (@aluno_ra,@disci_cod,@falta_dia,@faltas)
+			end
+		if(@disci_numaulas = 40 and @faltas <= 2)
+			begin 
+				insert into faltas(aluno_ra,disci_codigo,falta_dia,faltas_presencas) VAlues (@aluno_ra,@disci_cod,@falta_dia,@faltas)
+			end
+	end
+
 
 /* c) Apresentar em tela, a saída de uma UDF, com cursor, que apresenta um quadro com as notas da turma:  */
 /* (RA_Aluno, Nome_Aluno, Nota1, Nota2, ..., Média_Final, Situação(Aprovado ou Reprovado)) */
