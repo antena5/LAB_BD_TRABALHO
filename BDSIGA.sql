@@ -53,6 +53,8 @@ CREATE TABLE notas
 )
 go
 
+
+
 /* a) Fazer o sistema, com Stored Procedure para inserção de notas e pesos;  */
 create  procedure sp_Pesos
 @disci_codigo        int,
@@ -171,6 +173,32 @@ as
 /* f) Apresentar, em browser se Web ou abrir o arquivo , se desktop,  um relatório em PDF da mesma UDF da saída de tela de faltas */
 
 /* g) Fazer um gatilho que identifique se uma disciplina estiver sendo atualizada ou excluída, lance um erro e não permita que a operação ocorra */
+
+CREATE TRIGGER t_block on disciplina
+for Update , Delete
+as
+begin
+	declare
+	@aux int
+	set @aux =(select count(*) from deleted)
+	if(@aux>0)
+		BEGIN	
+					ROLLBACK TRANSACTION
+					RAISERROR ('Não é permitido alterar ou excluir as disciplinas ',16,2)
+		end
+end
+
+INSERT INTO disciplina(codigo,nome, sigla, turno, numaulas) 
+VALUES (0, 'ANALISE E DESENVOLVIMENTO DE SOFTWARE', 'ADS', 'T', 80),
+	   (1, 'COMERCIO EXTERIOR', 'COM', 'N', 80),
+	   (2, 'POLIMEROS', 'POL', 'M', 80),
+	   (3, 'LOGISTICA', 'LOG', 'T', 80)
+
+delete disciplina where codigo = 1
+
+select * from disciplina
+
+
 
 create table logar
 (
